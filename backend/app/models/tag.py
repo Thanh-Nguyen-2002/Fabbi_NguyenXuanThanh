@@ -2,40 +2,34 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.tag import Tag
+    from app.models.todo import Todo
 
-
-class Todo(Base):
-    """Todo model."""
-
-    __tablename__ = "todos"
+class Tag(Base):
+    __tablename__ = "tags"
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
         default=uuid.uuid4,
     )
-    title: Mapped[str] = mapped_column(
-        String(200),
-        nullable=False,
-    )
-    description: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    completed: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    name: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+    color: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="#000000",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -48,17 +42,21 @@ class Todo(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship(  # noqa: F821
+    user: Mapped["User"] = relationship(
         "User",
-        back_populates="todos",
+        back_populates="tags",
         lazy="select",
     )
-    tags: Mapped[list["Tag"]] = relationship(  # noqa: F821
-        "Tag",
+    todos: Mapped[list["Todo"]] = relationship(
+        "Todo",
         secondary="todo_tags",
-        back_populates="todos",
+        back_populates="tags",
         lazy="select",
     )
 
+    __table_args__ = (
+        Index("ix_tags_user_id_name_lower", user_id, func.lower(name), unique=True),
+    )
+
     def __repr__(self) -> str:
-        return f"<Todo {self.title}>"
+        return f"<Tag {self.name}>"
