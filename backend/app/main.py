@@ -37,6 +37,8 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(todos.router, prefix="/api/v1/todos", tags=["Todos"])
+from app.api.v1 import tags
+app.include_router(tags.router, prefix="/api/v1/tags", tags=["Tags"])
 
 
 @app.get("/health")
